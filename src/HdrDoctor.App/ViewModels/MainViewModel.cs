@@ -7,6 +7,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HdrDoctor.App.Services;
@@ -877,4 +879,104 @@ public sealed partial class MainViewModel : ViewModelBase
         {
         }
     }
+
+    // ---- Updating HDR Doctor -------------------------------------------------
+
+    /// <summary>Where <see cref="RestartForUpdate"/> should relaunch from.</summary>
+    private string? _restartTarget;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasUpdate))]
+    [NotifyPropertyChangedFor(nameof(UpdateHeadline))]
+    [NotifyPropertyChangedFor(nameof(UpdateDetail))]
+    public partial AppUpdate? AvailableUpdate { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdateHeadline))]
+    [NotifyPropertyChangedFor(nameof(UpdateDetail))]
+    public partial bool UpdateInstalled { get; set; }
+
+    public bool HasUpdate => AvailableUpdate is not null;
+
+    public string UpdateHeadline => UpdateInstalled
+        ? $"HDR Doctor {AvailableUpdate?.Version.ToString(3)} is ready"
+        : $"HDR Doctor {AvailableUpdate?.Version.ToString(3)} is available";
+
+    public string UpdateDetail => UpdateInstalled
+        ? "Restart to start using it."
+        : $"You are running {UpdateService.CurrentVersion.ToString(3)}. A newer HDR Doctor version is available.";
+
+    /// <summary>
+    /// Asks GitHub whether a newer HDR Doctor exists in the background.
+    /// </summary>
+    /// <remarks>
+    public async Task CheckForUpdatesAsync()
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+
+        try
+        {
+            AvailableUpdate = await new UpdateService(_services.Http).CheckAsync(deadline.Token);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdateAsync()
+    {
+        if (AvailableUpdate is not { } update || IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        IsProgressIndeterminate = true;
+
+        try
+        {
+            _restartTarget = await new UpdateService(_services.Http)
+                .ApplyAsync(update, NewProgress(), CancellationToken.None);
+
+            UpdateInstalled = true;
+            Status = $"HDR Doctor {update.Version.ToString(3)} installed. Restart to use it.";
+            StatusDetail = null;
+        }
+        catch (Exception e)
+        {
+            Status = "The update could not be installed.";
+            StatusDetail = e.Message;
+            await _dialogs.ShowMessageAsync("Update failed", e.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+            IsProgressIndeterminate = true;
+        }
+    }
+
+    [RelayCommand]
+    private void RestartForUpdate()
+    {
+        if (_restartTarget is null)
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(_restartTarget) { UseShellExecute = false });
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
+        (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+    }
+
+    /// <summary>Hides the banner for this run. The next launch asks again.</summary>
+    [RelayCommand]
+    private void DismissUpdate() => AvailableUpdate = null;
 }

@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Authors>Brian Allred</Authors>
+    <Product>HDR Doctor</Product>
+    <RepositoryUrl>https://github.com/BrianAllred/HDR-Doctor</RepositoryUrl>
+  </PropertyGroup>
+
+</Project>

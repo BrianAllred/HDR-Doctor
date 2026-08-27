@@ -123,6 +123,31 @@
 
         <ScrollViewer>
             <StackPanel Margin="16" Spacing="14">
+                <Border Classes="card" Background="{DynamicResource BannerBackgroundBrush}"
+                        IsVisible="{Binding HasUpdate}">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                        <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding UpdateHeadline}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding UpdateDetail}" TextWrapping="Wrap" Classes="muted" />
+                        </StackPanel>
+
+                        <Button Grid.Column="1" Content="Install" Classes="accent"
+                                VerticalAlignment="Center"
+                                Command="{Binding InstallUpdateCommand}"
+                                IsVisible="{Binding !UpdateInstalled}"
+                                IsEnabled="{Binding !IsBusy}" />
+
+                        <Button Grid.Column="1" Content="Restart now" Classes="accent"
+                                VerticalAlignment="Center"
+                                Command="{Binding RestartForUpdateCommand}"
+                                IsVisible="{Binding UpdateInstalled}" />
+
+                        <Button Grid.Column="2" Content="Later"
+                                VerticalAlignment="Center"
+                                Command="{Binding DismissUpdateCommand}"
+                                IsEnabled="{Binding !IsBusy}" />
+                    </Grid>
+                </Border>
 
                 <!-- Read-only banner -->
                 <Border Classes="card" Background="{DynamicResource BannerBackgroundBrush}"

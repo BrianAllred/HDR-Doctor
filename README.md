@@ -32,6 +32,54 @@ a scan: press **Verify files** to trigger it.
 Verification needs a published file list, so it is unavailable for private and
 developer builds, and offline. The report says which of those it hit.
 
+## Installing
+
+Every tagged release publishes a self-contained build for each platform on the
+[releases page](https://github.com/BrianAllred/HDR-Doctor/releases).
+
+| Download | For |
+| -------- | --- |
+| `HDR-Doctor-x86_64.AppImage` | Linux. Holds the app and the console version both |
+| `hdr-doctor-win-x64.exe` | Windows |
+| `hdr-doctor-osx-arm64` / `hdr-doctor-osx-x64` | macOS, Apple Silicon and Intel |
+| `hdr-doctor-linux-x64` | Linux, if you would rather not use the AppImage |
+| `hdr-doctor-cli-*` | The console version on its own |
+| `SHA256SUMS` | Checksums for all of the above |
+
+The AppImage runs the app when you launch it, and the console version behind a flag:
+
+```sh
+chmod +x HDR-Doctor-x86_64.AppImage
+./HDR-Doctor-x86_64.AppImage                          # the app
+./HDR-Doctor-x86_64.AppImage --cli /path/to/sdmc      # the report on stdout
+```
+
+**macOS.** The builds are ad-hoc signed, which is enough to stop macOS calling them
+damaged, but they are not notarized — so the first launch is refused as coming from an
+unidentified developer. Right-click the file and choose **Open** to get the prompt that
+lets you through, or clear the quarantine flag yourself:
+
+```sh
+xattr -dr com.apple.quarantine hdr-doctor-osx-arm64
+chmod +x hdr-doctor-osx-arm64
+```
+
+**Linux and macOS** downloads from a browser arrive without the executable bit;
+`chmod +x` is needed once.
+
+## Updating
+
+On launch the app asks GitHub whether a newer version exists and shows a banner if so.
+Click **Install** to install the update. The console version does the same thing
+on request:
+
+```sh
+hdr-doctor-cli --update
+```
+
+The download is checked against the release's published SHA-256 before it replaces
+anything. Mismatches are ignored.
+
 ## Running it
 
 ```sh
@@ -112,3 +160,8 @@ filesystem.
 - `Atmosphere/stratosphere/creport/source/creport_crash_report.cpp` — the crash
   report's file name and layout
 - Lots and lots (and lots) of hours in the HDR Discord server's #troubleshooting channel
+
+## Disclaimer
+
+This is an unofficial tool, not necessarily supported or endorsed by the HDR development team.
+As always, huge thanks to them for their work.

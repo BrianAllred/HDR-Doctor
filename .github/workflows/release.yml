@@ -1,0 +1,202 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and release (e.g. v1.2.3)'
+        required: true
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash 
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet test --configuration Release
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: linux-x64, os: ubuntu-latest }
+          - { rid: win-x64,   os: windows-latest }
+          - { rid: osx-x64,   os: macos-latest }
+          - { rid: osx-arm64, os: macos-latest }
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Read the version from the tag
+        id: version
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          echo "value=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish
+        env:
+          RID: ${{ matrix.rid }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+
+          publish() {
+            dotnet publish "$1" \
+              --configuration Release \
+              --runtime "$RID" \
+              --self-contained true \
+              --output "$2" \
+              -p:Version="$VERSION" \
+              -p:PublishSingleFile=true \
+              -p:IncludeNativeLibrariesForSelfExtract=true \
+              -p:EnableCompressionInSingleFile=true \
+              -p:DebugType=none
+          }
+
+          publish src/HdrDoctor.App app
+          publish tools/HdrDoctor.Cli cli
+
+          mkdir -p dist
+          suffix=""
+          [[ "$RID" == win-* ]] && suffix=".exe"
+
+          mv "app/HdrDoctor.App$suffix" "dist/hdr-doctor-$RID$suffix"
+          mv "cli/HdrDoctor.Cli$suffix" "dist/hdr-doctor-cli-$RID$suffix"
+
+      - name: Ad-hoc sign (macOS)
+        if: startsWith(matrix.rid, 'osx')
+        run: codesign --force --deep --sign - dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.rid }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+
+  appimage:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: bin-linux-x64
+          path: dist
+
+      - name: Assemble the AppDir
+        run: |
+          set -euo pipefail
+
+          mkdir -p AppDir/usr/bin
+
+          install -m 755 dist/hdr-doctor-linux-x64     AppDir/usr/bin/hdr-doctor
+          install -m 755 dist/hdr-doctor-cli-linux-x64 AppDir/usr/bin/hdr-doctor-cli
+          cp src/HdrDoctor.App/Assets/icon.png AppDir/hdr-doctor.png
+
+          cat > AppDir/hdr-doctor.desktop <<'DESKTOP'
+          [Desktop Entry]
+          Type=Application
+          Name=HDR Doctor
+          Comment=Inspect a HewDraw Remix installation and explain what is wrong with it
+          Exec=hdr-doctor
+          Icon=hdr-doctor
+          Categories=Utility;
+          Terminal=false
+          DESKTOP
+
+          cat > AppDir/AppRun <<'APPRUN'
+          #!/bin/sh
+          # The GUI is what a double-click should get. The CLI is the same report on
+          # stdout, so it rides along behind a flag rather than in a second download:
+          #   ./HDR-Doctor-x86_64.AppImage --cli /path/to/sdmc --verify
+          HERE="$(dirname "$(readlink -f "$0")")"
+
+          if [ "$1" = "--cli" ]; then
+              shift
+              exec "$HERE/usr/bin/hdr-doctor-cli" "$@"
+          fi
+
+          exec "$HERE/usr/bin/hdr-doctor" "$@"
+          APPRUN
+
+          chmod 755 AppDir/AppRun
+
+      - name: Build the AppImage
+        env:
+          ARCH: x86_64
+        run: |
+          set -euo pipefail
+
+          curl -fsSL -o appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+
+          # GitHub runners have no FUSE, so the tool has to unpack itself to run.
+          ./appimagetool --appimage-extract-and-run AppDir HDR-Doctor-x86_64.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: HDR-Doctor-x86_64.AppImage
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    needs: [build, appimage]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: staging
+          merge-multiple: true
+
+      - name: Checksum every asset
+        working-directory: staging
+        run: |
+          set -euo pipefail
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          prerelease=""
+          [[ "$TAG" == *-* ]] && prerelease="--prerelease"
+
+          gh release create "$TAG" staging/* \
+            --title "HDR Doctor ${TAG#v}" \
+            --generate-notes \
+            $prerelease

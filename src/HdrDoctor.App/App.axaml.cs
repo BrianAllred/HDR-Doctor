@@ -35,7 +35,13 @@ public partial class App : Application
 
             // Applied once the window is up so the folder picker and any error dialog
             // have a parent to attach to.
-            window.Opened += async (_, _) => await viewModel.ApplyStartupOptionsAsync(Startup);
+            window.Opened += async (_, _) =>
+            {
+                await viewModel.ApplyStartupOptionsAsync(Startup);
+#if !DEBUG
+                await viewModel.CheckForUpdatesAsync();
+#endif
+            };
 
             desktop.MainWindow = window;
             desktop.Exit += (_, _) => _services.Dispose();
