@@ -1,0 +1,98 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="HdrDoctor.App.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <Color x:Key="SystemAccentColor">#258341</Color>
+            <Color x:Key="SystemAccentColorLight1">#2F9E50</Color>
+            <Color x:Key="SystemAccentColorLight2">#6DB181</Color>
+            <Color x:Key="SystemAccentColorLight3">#8DC282</Color>
+            <Color x:Key="SystemAccentColorDark1">#1E6E36</Color>
+            <Color x:Key="SystemAccentColorDark2">#175629</Color>
+            <Color x:Key="SystemAccentColorDark3">#10401D</Color>
+
+            <SolidColorBrush x:Key="AppBackgroundBrush" Color="#0A0D0B" />
+            <SolidColorBrush x:Key="ChromeBackgroundBrush" Color="#141815" />
+            <SolidColorBrush x:Key="BrandLineBrush" Color="#258341" />
+            <SolidColorBrush x:Key="ControlBorderBrush" Color="#2E5A3A" />
+            <SolidColorBrush x:Key="ControlBorderPointerOverBrush" Color="#4C8F5D" />
+
+            <SolidColorBrush x:Key="SeverityCriticalBrush" Color="#FF7B72" />
+            <SolidColorBrush x:Key="SeverityErrorBrush" Color="#FFA657" />
+            <SolidColorBrush x:Key="SeverityWarningBrush" Color="#E3B341" />
+            <SolidColorBrush x:Key="SeverityInfoBrush" Color="#79C0FF" />
+            <SolidColorBrush x:Key="SeverityOkBrush" Color="#7EE787" />
+            <SolidColorBrush x:Key="CardBackgroundBrush" Color="#1B201C" />
+            <SolidColorBrush x:Key="CardBorderBrush" Color="#2A322C" />
+            <SolidColorBrush x:Key="MutedTextBrush" Color="#97A39A" />
+            <SolidColorBrush x:Key="BannerBackgroundBrush" Color="#2A2318" />
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme />
+
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+        </Style>
+
+        <Style Selector="Button">
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+        </Style>
+
+        <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderPointerOverBrush}" />
+        </Style>
+
+        <Style Selector="ComboBox">
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+        </Style>
+
+        <Style Selector="CheckBox:unchecked /template/ Border#NormalRectangle">
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderPointerOverBrush}" />
+        </Style>
+
+        <Style Selector="Button.destructive">
+            <Setter Property="Background" Value="{DynamicResource SeverityCriticalBrush}" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SeverityCriticalBrush}" />
+        </Style>
+
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
+
+        <Style Selector="TextBlock.muted">
+            <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+        </Style>
+
+        <Style Selector="ToggleButton.disclosure">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0,2" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style Selector="ToggleButton.disclosure:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="TextBlock.TextDecorations" Value="Underline" />
+        </Style>
+
+        <Style Selector="ToggleButton.disclosure:checked /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="TextBlock.sectionHeading">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </Application.Styles>
+</Application>

@@ -1,0 +1,296 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:HdrDoctor.App.ViewModels"
+        xmlns:conv="using:HdrDoctor.App.Converters"
+        mc:Ignorable="d" d:DesignWidth="1080" d:DesignHeight="760"
+        x:Class="HdrDoctor.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/icon.ico"
+        Title="HDR Doctor"
+        Width="1080" Height="760"
+        MinWidth="820" MinHeight="560">
+
+    <Window.Resources>
+        <conv:ResourceKeyToBrushConverter x:Key="SeverityBrush" />
+    </Window.Resources>
+
+    <DockPanel LastChildFill="True">
+
+        <!-- Toolbar: which install -->
+        <Border DockPanel.Dock="Top" Padding="16,12"
+                Background="{DynamicResource ChromeBackgroundBrush}"
+                BorderBrush="{DynamicResource BrandLineBrush}" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
+
+                <ComboBox Grid.Column="0"
+                          ItemsSource="{Binding Profiles}"
+                          SelectedItem="{Binding SelectedProfile}"
+                          HorizontalAlignment="Stretch"
+                          IsEnabled="{Binding !IsBusy}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProfileViewModel">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Name}" />
+                                <TextBlock Text="{Binding Detail}" FontSize="11" Classes="muted" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <Button Grid.Column="1" Content="Add local folder…"
+                        Command="{Binding AddFolderCommand}"
+                        IsEnabled="{Binding !IsBusy}" />
+
+                <Button Grid.Column="2" Content="Add FTP folder…"
+                        Command="{Binding AddFtpCommand}"
+                        IsEnabled="{Binding !IsBusy}" />
+
+                <Button Grid.Column="3" Content="⋯" Width="36" ToolTip.Tip="More actions"
+                        IsEnabled="{Binding !IsBusy}">
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="Treat as the other platform"
+                                      Command="{Binding TogglePlatformCommand}" />
+                            <MenuItem Header="Open a log file…"
+                                      Command="{Binding PickLogCommand}" />
+                            <Separator />
+                            <MenuItem Header="Reinstall HDR from scratch…"
+                                      Command="{Binding FreshInstallCommand}"
+                                      IsEnabled="{Binding !IsReadOnlySource}" />
+                            <Separator />
+                            <MenuItem Header="Forget this install"
+                                      Command="{Binding RemoveProfileCommand}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+
+                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
+                    <!-- Verification is a second, deliberate step: it reads every file
+                         HDR ships, so a scan reports it as not run and this starts it. -->
+                    <Button Content="Verify files" MinWidth="90"
+                            Command="{Binding VerifyFilesCommand}"
+                            IsVisible="{Binding !IsBusy}"
+                            IsEnabled="{Binding CanVerify}"
+                            ToolTip.Tip="Check every file in the HDR folders against the release's published hashes. This reads the whole install and can take several minutes." />
+                    <Button Content="Scan" MinWidth="90" Classes="accent"
+                            Command="{Binding ScanCommand}"
+                            IsVisible="{Binding !IsBusy}"
+                            IsEnabled="{Binding CanScan}" />
+                    <Button Content="Stop" MinWidth="90"
+                            Command="{Binding CancelScanCommand}"
+                            IsVisible="{Binding IsBusy}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Status line and progress. -->
+        <Border DockPanel.Dock="Top" Padding="16,10"
+                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Spacing="6">
+                <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding StatusDetail}" FontSize="11" Classes="muted"
+                           TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding StatusDetail, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <ProgressBar Height="3"
+                             IsVisible="{Binding IsBusy}"
+                             IsIndeterminate="{Binding IsProgressIndeterminate}"
+                             Minimum="0" Maximum="1" Value="{Binding ProgressFraction}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Footer: the report and the fixes. -->
+        <Border DockPanel.Dock="Bottom" Padding="16,12"
+                Background="{DynamicResource ChromeBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="12">
+                <CheckBox Grid.Column="0" Content="Show passing checks"
+                          IsChecked="{Binding ShowPassingChecks}" />
+                <CheckBox Grid.Column="1" Content="Ignore music files"
+                          IsChecked="{Binding IgnoreMusicFiles}"
+                          ToolTip.Tip="Skip verifying music files, which many people replace with custom soundtracks." />
+
+                <Button Grid.Column="3" Content="Export report…"
+                        Command="{Binding ExportReportCommand}"
+                        IsEnabled="{Binding HasResults}" />
+
+                <Button Grid.Column="4" Content="Apply selected fixes" Classes="accent"
+                        Command="{Binding ApplyFixesCommand}"
+                        IsEnabled="{Binding CanFix}" />
+            </Grid>
+        </Border>
+
+        <ScrollViewer>
+            <StackPanel Margin="16" Spacing="14">
+
+                <!-- Read-only banner -->
+                <Border Classes="card" Background="{DynamicResource BannerBackgroundBrush}"
+                        IsVisible="{Binding IsReadOnlySource}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Read-only connection" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" Classes="muted" Text="{Binding ReadOnlyReason}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- What was scanned. Goes into the exported report too. -->
+                <Border Classes="card"
+                        IsVisible="{Binding Environment, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel Spacing="8" DataContext="{Binding Environment}">
+                        <TextBlock Text="What was scanned" Classes="sectionHeading" />
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                              ColumnSpacing="16" RowSpacing="3">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Folder" Classes="muted" />
+                            <SelectableTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SourceDescription}" TextWrapping="Wrap" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Treated as" Classes="muted" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Platform}" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="HDR version" Classes="muted" />
+                            <SelectableTextBlock Grid.Row="2" Grid.Column="1" Text="{Binding HdrVersion, TargetNullValue='not detected'}" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Assets version" Classes="muted" />
+                            <SelectableTextBlock Grid.Row="3" Grid.Column="1" Text="{Binding AssetsVersion, TargetNullValue='not detected'}" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Channel" Classes="muted" />
+                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Channel}" />
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Emulator" Classes="muted"
+                                       IsVisible="{Binding EmulatorName, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                            <SelectableTextBlock Grid.Row="5" Grid.Column="1" Text="{Binding EmulatorName}"
+                                                 IsVisible="{Binding EmulatorName, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Findings, grouped by troubleshooting area. -->
+                <ItemsControl ItemsSource="{Binding Groups}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="14" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FindingGroupViewModel">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding Title}" Classes="sectionHeading" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Summary}" Classes="muted" FontSize="12"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding Findings}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="8" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:FindingViewModel">
+                                            <Border Classes="card">
+                                                <StackPanel Spacing="8">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                                        <!-- Severity is carried by a color bar plus a word,
+                                                             so it never depends on color alone. -->
+                                                        <Border Grid.Column="0" Width="4" CornerRadius="2"
+                                                                VerticalAlignment="Stretch"
+                                                                Background="{Binding SeverityBrushKey, Converter={StaticResource SeverityBrush}}" />
+
+                                                        <StackPanel Grid.Column="1" Spacing="3">
+                                                            <TextBlock Text="{Binding SeverityLabel}"
+                                                                       FontSize="11" FontWeight="Bold"
+                                                                       Foreground="{Binding SeverityBrushKey, Converter={StaticResource SeverityBrush}}" />
+                                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                                                       TextWrapping="Wrap" />
+                                                            <SelectableTextBlock Text="{Binding Detail}" TextWrapping="Wrap"
+                                                                                 Classes="muted" FontSize="12"
+                                                                                 IsVisible="{Binding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                        </StackPanel>
+
+                                                        <CheckBox Grid.Column="2" Content="Fix"
+                                                                  IsChecked="{Binding SelectedForFix}"
+                                                                  IsVisible="{Binding CanBeFixed}"
+                                                                  ToolTip.Tip="{Binding FixDescription}"
+                                                                  VerticalAlignment="Top" />
+                                                    </Grid>
+
+                                                    <ToggleButton Classes="disclosure"
+                                                                  IsChecked="{Binding IsExpanded}"
+                                                                  IsVisible="{Binding HasExplanation}"
+                                                                  HorizontalAlignment="Left">
+                                                        <TextBlock Text="Details" FontSize="14" />
+                                                    </ToggleButton>
+
+                                                    <StackPanel IsVisible="{Binding IsExpanded}">
+                                                        <StackPanel Spacing="10" Margin="0,2,0,0">
+                                                            <SelectableTextBlock Text="{Binding Explanation}"
+                                                                                 TextWrapping="Wrap" LineHeight="20" />
+
+                                                            <StackPanel Spacing="6" IsVisible="{Binding HasPaths}">
+                                                                <TextBlock Text="Affected" Classes="muted" FontSize="11" />
+                                                                <SelectableTextBlock FontFamily="monospace" FontSize="11"
+                                                                                     TextWrapping="Wrap"
+                                                                                     Text="{Binding PathText}" />
+                                                                <Button Content="Show me"
+                                                                        HorizontalAlignment="Left"
+                                                                        Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RevealCommand}"
+                                                                        CommandParameter="{Binding PrimaryPath}" />
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- The files have not been checked against the release. Stated as its
+                     own card because "the scan found nothing" and "nobody looked" are
+                     easy to confuse, and only one of them is good news. -->
+                <Border Classes="card" IsVisible="{Binding NeedsVerification}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Files not verified" Classes="sectionHeading" />
+                        <TextBlock Text="{Binding VerificationPrompt}" TextWrapping="Wrap" Classes="muted" />
+                        <Button Content="Verify files" HorizontalAlignment="Left"
+                                Command="{Binding VerifyFilesCommand}"
+                                IsEnabled="{Binding CanVerify}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Checks that did not run. -->
+                <Border Classes="card" IsVisible="{Binding HasSkipped}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Not checked" Classes="sectionHeading" />
+                        <ItemsControl ItemsSource="{Binding Skipped}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,6">
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="12" />
+                                        <TextBlock Text="{Binding Reason}" Classes="muted" FontSize="12"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Empty state. -->
+                <Border Classes="card" IsVisible="{Binding !HasResults}">
+                    <StackPanel Spacing="8">
+                        <Image Source="/Assets/hdr-wordmark.png" Width="280"
+                               HorizontalAlignment="Left" Margin="0,2,0,12"
+                               RenderOptions.BitmapInterpolationMode="HighQuality" />
+                        <TextBlock Text="Nothing scanned yet" Classes="sectionHeading" />
+                        <TextBlock TextWrapping="Wrap" Classes="muted"
+                                   Text="Pick the folder your SD card or emulator uses — the one containing 'atmosphere' and 'ultimate' — then press Scan. Everything is read-only until you choose a fix." />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>
