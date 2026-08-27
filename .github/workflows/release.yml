@@ -196,7 +196,15 @@ jobs:
           prerelease=""
           [[ "$TAG" == *-* ]] && prerelease="--prerelease"
 
-          gh release create "$TAG" staging/* \
-            --title "HDR Doctor ${TAG#v}" \
-            --generate-notes \
-            $prerelease
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            if gh release download "$TAG" -p SHA256SUMS -O published-sums 2>/dev/null; then
+              awk '!seen[$2]++' staging/SHA256SUMS published-sums > merged-sums
+              mv merged-sums staging/SHA256SUMS
+            fi
+            gh release upload "$TAG" staging/* --clobber
+          else
+            gh release create "$TAG" staging/* \
+              --title "HDR Doctor ${TAG#v}" \
+              --generate-notes \
+              $prerelease
+          fi
