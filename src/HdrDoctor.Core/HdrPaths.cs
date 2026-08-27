@@ -67,12 +67,12 @@ public static class HdrPaths
     /// The three folders a stock install owns. Hash verification and the reverse
     /// "unexpected files" pass are scoped to these, matching the launcher's verify.
     /// </summary>
-    public static readonly IReadOnlyList<string> HdrOwnedFolders = new[]
-    {
+    public static readonly IReadOnlyList<string> HdrOwnedFolders =
+    [
         HdrDir,
         HdrStagesDir,
         HdrAssetsDir,
-    };
+    ];
 
     /// <summary>
     /// Mod folder names that are HDR's own, in any of their build-channel spellings.
@@ -90,8 +90,8 @@ public static class HdrPaths
     /// Plugins the packager installs. The first three are additionally checked by
     /// the mod itself at boot; their absence is a crash, not a degradation.
     /// </summary>
-    public static readonly IReadOnlyList<RequiredPlugin> RequiredPlugins = new[]
-    {
+    public static readonly IReadOnlyList<RequiredPlugin> RequiredPlugins =
+    [
         new RequiredPlugin("libsmashline_plugin.nro", true,
             "Smashline is what installs every one of HDR's fighter scripts. Without it the game will almost certainly crash on boot."),
         new RequiredPlugin("libarcropolis.nro", true,
@@ -102,14 +102,14 @@ public static class HdrPaths
             "This plugin provides HDR's alternate stage variants. Without it stage alts are unavailable and stage selection may misbehave."),
         new RequiredPlugin("libstage_config.nro", false,
             "This plugin applies HDR's per-stage settings (hazards, gravity, collisions). Without it stages behave with vanilla settings."),
-    };
+    ];
 
     /// <summary>
     /// Plugins that must not be in the active plugins folder. Ported from the
     /// launcher's always-disable list plus HDR's own stale-plugin check.
     /// </summary>
-    public static readonly IReadOnlyList<ConflictingPlugin> ConflictingPlugins = new[]
-    {
+    public static readonly IReadOnlyList<ConflictingPlugin> ConflictingPlugins =
+    [
         new ConflictingPlugin("libparam_config.nro", Model.Severity.Critical,
             "param_config conflicts directly with HDR — both try to own the same fighter parameters. It has to go."),
         new ConflictingPlugin("libhdr.nro", Model.Severity.Critical,
@@ -122,9 +122,19 @@ public static class HdrPaths
             "A controller-input hook that is no longer used by HDR and interferes with its input handling."),
         new ConflictingPlugin("libacmd_hook.nro", Model.Severity.Error,
             "An old animation-command hook, superseded by Smashline. Running both corrupts fighter scripts."),
-    };
+    ];
 
-    /// <summary>The launcher plugin, which crashes on boot under an emulator.</summary>
+    /// <summary>
+    /// Plugins that technically still work but are no longer supported
+    /// and should be replaced.
+    /// </summary>
+    public static readonly IReadOnlyList<DeprecatedPlugin> DeprecatedPlugins =
+    [
+        new DeprecatedPlugin("liblocal_latency_slider.nro", Model.Severity.Warning,
+            "A deprecated plugin for latency adjustment in Local Wireless on emulator. It conflicts with ssbu-online-deluxe."),
+    ];
+
+    /// <summary>The launcher plugin, which isn't required on emulator, but is on console.</summary>
     public const string LauncherNro = "hdr-launcher.nro";
 }
 
@@ -140,3 +150,8 @@ public sealed record RequiredPlugin(string FileName, bool CheckedByModItself, st
 /// <param name="Severity">How badly it breaks things when present.</param>
 /// <param name="Explanation">Why it conflicts.</param>
 public sealed record ConflictingPlugin(string FileName, Model.Severity Severity, string Explanation);
+
+/// <param name="FileName">Plugin file name that is deprecated.</param>
+/// <param name="Severity">How badly it breaks things when present.</param>
+/// <param name="Explanation">Why it is deprecated.</param>
+public sealed record DeprecatedPlugin(string FileName, Model.Severity Severity, string Explanation);

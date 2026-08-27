@@ -68,9 +68,8 @@ public sealed class ThirdPartyModCheck : ICheck
         }
 
         var removalAdvice = ctx.Platform == InstallPlatform.Switch
-            ? "On a Switch you can either delete the folder or turn the mod off in ARCropolis's mod manager — "
-              + "disabling it is enough."
-            : "On an emulator there is no mod manager to turn it off with, so the folder has to be removed.";
+            ? "On a Switch you can either delete the folder or turn the mod off in ARCropolis's mod manager."
+            : "On an emulator there is no functional mod manager to turn it off with, so the folder has to be removed.";
 
         if (codeMods.Count > 0)
         {

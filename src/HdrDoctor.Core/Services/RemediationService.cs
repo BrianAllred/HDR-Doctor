@@ -14,8 +14,7 @@ public sealed record RemediationOutcome(Finding Finding, bool Succeeded, string?
 /// takes an <see cref="IMutableInstallSource"/>, so it cannot be pointed at a
 /// read-only source such as an FTP connection.
 ///
-/// One failing fix does not stop the rest — a user who selected six things should not
-/// have four of them silently skipped because the second one hit a locked file.
+/// One failing fix does not stop the rest.
 /// </remarks>
 public static class RemediationService
 {

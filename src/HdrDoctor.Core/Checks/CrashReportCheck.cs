@@ -64,7 +64,7 @@ public sealed class CrashReportCheck : ICheck
                 newest,
                 text,
                 Severity.Error,
-                isNewestOnCard ? "Smash crashed, and the console recorded why" : "Smash crashed earlier on",
+                isNewestOnCard ? "Smash crashed" : "Smash crashed earlier on",
                 (isNewestOnCard
                     ? "This is the newest crash report from Super Smash Bros. Ultimate."
                     : "This is the newest crash report from Super Smash Bros. Ultimate. "

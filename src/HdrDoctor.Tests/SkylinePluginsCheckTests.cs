@@ -149,6 +149,19 @@ public class SkylinePluginsCheckTests
     }
 
     [Fact]
+    public async Task Local_latency_slider_must_be_deleted_on_emulator()
+    {
+        using var sd = new SdFixture()
+            .WithHealthyInstall(InstallPlatform.Emulator)
+            .WithFile($"{HdrPaths.PluginsDir}/liblocal_latency_slider.nro", "conflict");
+
+        var findings = await sd.RunAsync(new SkylinePluginsCheck(), InstallPlatform.Emulator);
+
+        var finding = findings.Single("liblocal_latency_slider.nro is deprecated");
+        Assert.True(finding.Remediation!.IsDestructive);
+    }
+
+    [Fact]
     public async Task Param_config_already_in_disabled_plugins_is_accepted()
     {
         using var sd = new SdFixture()

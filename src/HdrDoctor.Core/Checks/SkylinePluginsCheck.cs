@@ -47,6 +47,7 @@ public sealed class SkylinePluginsCheck : ICheck
 
         CheckRequired(ctx, present, findings);
         CheckConflicting(ctx, present, disabled, findings);
+        CheckDeprecated(ctx, present, findings);
         await CheckDevelopmentNroAsync(ctx, findings, ct).ConfigureAwait(false);
         CheckUnrecognized(present, findings);
 
@@ -179,6 +180,32 @@ public sealed class SkylinePluginsCheck : ICheck
                     string.Empty,
                     [$"{HdrPaths.DisabledPluginsDir}/{disabledName}"]));
             }
+        }
+    }
+
+    private void CheckDeprecated(
+        ScanContext ctx,
+        IReadOnlyDictionary<string, string> present,
+        List<Finding> findings)
+
+    {
+        foreach (var deprecated in HdrPaths.DeprecatedPlugins)
+        {
+            if (!present.TryGetValue(deprecated.FileName, out var realName))
+            {
+                continue;
+            }
+
+            var activePath = $"{HdrPaths.PluginsDir}/{realName}";
+
+            findings.Add(new Finding(
+                Id,
+                deprecated.Severity,
+                $"{realName} is deprecated",
+                $"{activePath} is active.",
+                $"{deprecated.Explanation} It should be removed or replaced.",
+                [activePath],
+                new DeleteFileRemediation(activePath, $"Delete {activePath}.")));
         }
     }
 
