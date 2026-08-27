@@ -91,7 +91,7 @@ jobs:
         if: startsWith(matrix.rid, 'osx')
         run: codesign --force --deep --sign - dist/*
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: bin-${{ matrix.rid }}
           path: dist/*
@@ -161,7 +161,7 @@ jobs:
           # GitHub runners have no FUSE, so the tool has to unpack itself to run.
           ./appimagetool --appimage-extract-and-run AppDir HDR-Doctor-x86_64.AppImage
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: appimage
           path: HDR-Doctor-x86_64.AppImage
