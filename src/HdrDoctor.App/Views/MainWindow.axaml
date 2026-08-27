@@ -71,7 +71,6 @@
                          HDR ships, so a scan reports it as not run and this starts it. -->
                     <Button Content="Verify files" MinWidth="90"
                             Command="{Binding VerifyFilesCommand}"
-                            IsVisible="{Binding !IsBusy}"
                             IsEnabled="{Binding CanVerify}"
                             ToolTip.Tip="Check every file in the HDR folders against the release's published hashes. This reads the whole install and can take several minutes." />
                     <Button Content="Scan" MinWidth="90" Classes="accent"
