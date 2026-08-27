@@ -5,6 +5,12 @@ with it. Point it at an SD card folder (either an emulator's `sdmc` or `sdcard` 
 
 It is not a replacement for the HDR launcher.
 
+<img width="1108" height="812" alt="image" src="https://github.com/user-attachments/assets/125c02d7-ff72-4cf1-9e39-e38a97b9e29c" />
+
+<img width="1108" height="812" alt="image" src="https://github.com/user-attachments/assets/8d9a4816-f66e-423a-9d68-c3ef3924ea2b" />
+
+<img width="1108" height="812" alt="image" src="https://github.com/user-attachments/assets/6d44acfa-5b9b-41f5-a99f-baf1b4d3b7b8" />
+
 ## What it checks
 
 | Area | Looks for |
