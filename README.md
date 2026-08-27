@@ -3,7 +3,7 @@
 A desktop app that inspects a HewDraw Remix installation and explains what is wrong
 with it. Point it at an SD card folder (either an emulator's `sdmc` or `sdcard` folder, a real Switch SD card over Hekate or inserted in the PC, or a Switch SD over FTP) to get a report on any issues. Note that automatic repairs aren't available over FTP.
 
-It is not a replacement for the HDR launcher.
+This is an **unofficial** app. It is **not** a replacement for the HDR launcher.
 
 <img width="1108" height="812" alt="image" src="https://github.com/user-attachments/assets/125c02d7-ff72-4cf1-9e39-e38a97b9e29c" />
 
