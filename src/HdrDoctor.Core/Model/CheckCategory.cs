@@ -16,6 +16,7 @@ public enum CheckCategory
     SkylineLog,
     CrashReport,
     InstallLayout,
+    SdCard,
 }
 
 public static class CheckCategoryExtensions
@@ -32,6 +33,7 @@ public static class CheckCategoryExtensions
         CheckCategory.SkylineLog => "Crash/Skyline log",
         CheckCategory.CrashReport => "Crash reports",
         CheckCategory.InstallLayout => "Install layout",
+        CheckCategory.SdCard => "SD card",
         _ => category.ToString(),
     };
 }

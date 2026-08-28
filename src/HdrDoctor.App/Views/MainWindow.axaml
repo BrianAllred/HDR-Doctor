@@ -67,8 +67,6 @@
                 </Button>
 
                 <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
-                    <!-- Verification is a second, deliberate step: it reads every file
-                         HDR ships, so a scan reports it as not run and this starts it. -->
                     <Button Content="Verify files" MinWidth="90"
                             Command="{Binding VerifyFilesCommand}"
                             IsEnabled="{Binding CanVerify}"

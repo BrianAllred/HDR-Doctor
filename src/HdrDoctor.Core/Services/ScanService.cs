@@ -18,8 +18,10 @@ public sealed class ScanService(ReleaseManifestClient manifests, IAppPaths paths
     /// in the install, so it is a step the user starts, not something a scan does on
     /// their behalf. <see cref="VerifyFilesAsync"/> runs it.
     /// </remarks>
-    private IReadOnlyList<ICheck> BuildChecks() =>
+    private IReadOnlyList<ICheck> BuildChecks(InstallProfile profile) =>
     [
+        new SdCardFilesystemCheck(
+            profile.Kind == ProfileKind.Local && !profile.IsFtpMount ? profile.Path : null),
         new InstallLayoutCheck(),
         new SkylinePluginsCheck(),
         new HidModuleCheck(),
@@ -59,7 +61,7 @@ public sealed class ScanService(ReleaseManifestClient manifests, IAppPaths paths
             Progress = progress,
         };
 
-        var findings = await new CheckRunner(BuildChecks())
+        var findings = await new CheckRunner(BuildChecks(profile))
             .RunAsync(ctx, skipped, ct)
             .ConfigureAwait(false);
 

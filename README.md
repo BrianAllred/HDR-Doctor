@@ -24,6 +24,7 @@ This is an **unofficial** app. It is **not** a replacement for the HDR launcher.
 | Launcher config | The desktop launcher's emulator and SD paths, including the case where it has been installing somewhere the emulator doesn't read |
 | Crash/Skyline log | A Skyline or emulator log, matched against the messages that identify a known cause |
 | Crash reports | On a Switch, the newest `atmosphere/crash_reports` from a Smash crash |
+| SD card | Checks that the SD card is properly formatted as FAT32 |
 
 **RNG seed.** Skyline mods detect whether they are on a real Switch or an emulator by
 where the game's code was loaded in memory. Enabling a fixed RNG seed is what stops
