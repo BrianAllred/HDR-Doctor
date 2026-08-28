@@ -9,6 +9,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using HdrDoctor.Core.Profiles;
+using HdrDoctor.Core.Services;
 using HdrDoctor.Core.Sources;
 
 namespace HdrDoctor.App.Services;
@@ -498,6 +499,141 @@ public sealed class DialogService(Window owner)
         {
             dialog.Show();
             return false;
+        }
+
+        await dialog.ShowDialog(owner);
+        return result;
+    }
+
+
+    /// <summary>
+    /// Lists the emulator settings that would change and returns the ones the user
+    /// kept, or null if they cancelled.
+    /// </summary>
+    public async Task<IReadOnlyList<SettingChange>?> ConfirmSettingsAsync(
+        string emulatorName,
+        SettingsPlan plan)
+    {
+        var boxes = new List<(CheckBox Box, SettingChange Change)>();
+
+        var list = new StackPanel { Spacing = 12 };
+
+        foreach (var change in plan.Changes)
+        {
+            var box = new CheckBox
+            {
+                Content = $"{change.DisplayName}  —  {change.Summary}",
+                IsChecked = true,
+                IsEnabled = change.IsOptional,
+            };
+
+            boxes.Add((box, change));
+
+            var row = new StackPanel { Spacing = 2, Children = { box } };
+
+            row.Children.Add(new TextBlock
+            {
+                Text = $"currently {change.Current}",
+                FontSize = 11,
+                Margin = new Avalonia.Thickness(28, 0, 0, 0),
+                TextWrapping = TextWrapping.Wrap,
+                Classes = { "muted" },
+            });
+
+            if (change.Caveat is not null)
+            {
+                row.Children.Add(new TextBlock
+                {
+                    Text = change.Caveat,
+                    FontSize = 11,
+                    Margin = new Avalonia.Thickness(28, 2, 0, 0),
+                    TextWrapping = TextWrapping.Wrap,
+                    Classes = { "muted" },
+                });
+            }
+
+            list.Children.Add(row);
+        }
+
+        foreach (var cache in plan.PptcCaches)
+        {
+            list.Children.Add(new TextBlock
+            {
+                Text = $"Deletes the PPTC cache at {cache}",
+                FontSize = 12,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = Avalonia.Application.Current?.FindResource("SeverityCriticalBrush") as IBrush,
+            });
+        }
+
+        IReadOnlyList<SettingChange>? result = null;
+
+        var cancel = new Button { Content = "Cancel", MinWidth = 96, IsCancel = true };
+        var apply = new Button
+        {
+            Content = "Apply",
+            MinWidth = 96,
+            IsDefault = true,
+            Classes = { plan.PptcCaches.Count > 0 ? "destructive" : "accent" },
+        };
+
+        var dialog = new Window
+        {
+            Title = "Apply emulator settings",
+            SizeToContent = SizeToContent.Height,
+            Width = 560,
+            MaxHeight = 700,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false,
+            ShowInTaskbar = false,
+            Icon = _owner.Icon,
+        };
+
+        apply.Click += (_, _) =>
+        {
+            result = [.. boxes.Where(b => b.Box.IsChecked == true).Select(b => b.Change)];
+            dialog.Close();
+        };
+
+        cancel.Click += (_, _) => dialog.Close();
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(24),
+            Spacing = 20,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = $"Apply emulator settings to {emulatorName}",
+                    FontSize = 18,
+                    FontWeight = FontWeight.SemiBold,
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                new TextBlock
+                {
+                    Text = "These are written to the config file with highest precedence, which is the per-game config first, then global. "
+                           + "The file is backed up alongside itself as .bak first.",
+                    TextWrapping = TextWrapping.Wrap,
+                    FontSize = 12,
+                    Classes = { "muted" },
+                },
+                new ScrollViewer { MaxHeight = 420, Content = list },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { cancel, apply },
+                },
+            },
+        };
+
+        var owner = ResolveOwner();
+
+        if (owner is null)
+        {
+            return null;
         }
 
         await dialog.ShowDialog(owner);

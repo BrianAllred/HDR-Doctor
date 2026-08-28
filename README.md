@@ -20,7 +20,7 @@ This is an **unofficial** app. It is **not** a replacement for the HDR launcher.
 | HDR mod folders | The folders HDR owns are present and complete enough to boot; the versions they declare; other installed mods classified as code / gameplay / cosmetic |
 | File verification | Every file MD5-verified against the release's published `content_hashes.json`; missing, altered and unexpected files. A separate step you start yourself — see below |
 | Stage alts | `ultimate/stage-alts/Hashes_all` — missing or malformed, which panics the game during boot |
-| Emulator config | RNG seed, VSync, graphics backend, async shaders and presentation, forced clocks, memory layout (yuzu family); PPTC (Ryujinx) |
+| Emulator config | RNG seed, VSync, graphics backend, async shaders and presentation, forced clocks, memory layout (yuzu family); PPTC (Ryujinx). These can also be written for you — see below |
 | Launcher config | The desktop launcher's emulator and SD paths, including the case where it has been installing somewhere the emulator doesn't read |
 | Crash/Skyline log | A Skyline or emulator log, matched against the messages that identify a known cause |
 | Crash reports | On a Switch, the newest `atmosphere/crash_reports` from a Smash crash |
@@ -37,6 +37,35 @@ a scan: press **Verify files** to trigger it.
 
 Verification needs a published file list, so it is unavailable for private and
 developer builds, and offline. The report says which of those it hit.
+
+## Emulator settings
+
+Several of the settings an emulator ships with aren't optimal for HDR.
+
+An **Emulator settings** button appears in the toolbar and can those settings
+for you when the selected profile knows which emulator it belongs to and can access
+its configuration file.
+
+`hdr-doctor-cli --emulator-settings` does the same thing without the prompts.
+
+Notes about how it works:
+
+- **It writes to whichever file currently decides the setting.** yuzu-family emulators
+  keep a global `qt-config.ini` and a per-game override for Smash, and a per-game config
+  has precedence over the global config.
+- **The emulator has to be closed first.** It rewrites its own settings when it exits,
+  so anything written while it is open is overwritten the moment you close it. HDR Doctor
+  offers to close it and offers to force it when that does not work. The console version
+  just tells you and stops.
+- **Each file is copied to a `.bak` backup** before anything is written.
+- **Some settings aren't optimal in all scenarios and are optional.** Memory layout, GPU
+  mode, forced clocks, and async presentation come checked with the note explaining what
+  they are and in which scenarios you may not want to use the defaults.  
+  Note that the console version of HDR Doctor automatically applies these settings, assuming
+  the user knows what they're doing.
+- **Ryujinx** gets PPTC turned off, and the stale cache deleted with it. Skyline works by
+  hooking and transforming the game's code, so if the original Smash code is cached, it
+  conflicts with Skyline and crashes the emulator.
 
 ## Installing
 
@@ -89,9 +118,9 @@ anything. Mismatches are ignored.
 ## Running it
 
 ```sh
-dotnet run --project src/HdrDoctor.App
-dotnet run --project src/HdrDoctor.App -- /path/to/sdmc --scan
-dotnet run --project src/HdrDoctor.App -- /path/to/sdmc --scan --verify
+hdr-doctor
+hdr-doctor /path/to/sdmc --scan
+hdr-doctor /path/to/sdmc --scan --verify
 ```
 
 The second form selects (or creates) a profile for that folder and scans immediately,
@@ -101,9 +130,14 @@ file verification step.
 There is also a console version that prints the same report to stdout:
 
 ```sh
-dotnet run --project tools/HdrDoctor.Cli -- /path/to/sdmc
-dotnet run --project tools/HdrDoctor.Cli -- /path/to/sdmc --verify
+hdr-doctor-cli /path/to/sdmc
+hdr-doctor-cli /path/to/sdmc --verify
+hdr-doctor-cli /path/to/sdmc --emulator-settings
 ```
+
+Substitute the name of whichever build you downloaded — `hdr-doctor-linux-x64`,
+`hdr-doctor-win-x64.exe` and so on. The AppImage holds both, and reaches the console
+version through `--cli` as shown above.
 
 ## Profiles
 

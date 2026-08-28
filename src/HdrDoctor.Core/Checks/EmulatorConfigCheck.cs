@@ -263,10 +263,10 @@ public sealed class EmulatorConfigCheck : ICheck
 
         findings.Add(new Finding(
             Id,
-            Severity.Warning,
+            Severity.Info,
             "Asynchronous presentation is enabled",
             $"async_presentation is {setting.Value}, from {setting.OriginDescription}.",
-            "This is a known crash risk. It is not guaranteed to be your problem, but if you are getting crashes that "
+            "This is a known crash risk on some systems. It is not guaranteed to be your problem, but if you are getting crashes that "
             + "are hard to reproduce, this is one of the first things to check.",
             ["Graphics > Async presentation"]));
     }

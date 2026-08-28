@@ -73,6 +73,11 @@
                             Command="{Binding VerifyFilesCommand}"
                             IsEnabled="{Binding CanVerify}"
                             ToolTip.Tip="Check every file in the HDR folders against the release's published hashes. This reads the whole install and can take several minutes." />
+                    <Button Content="Emulator settings" MinWidth="90"
+                            Command="{Binding ApplyEmulatorSettingsCommand}"
+                            IsEnabled="{Binding CanApplyEmulatorSettings}"
+                            IsVisible="{Binding HasEmulatorSettings}"
+                            ToolTip.Tip="Write optimal emulator settings to the emulator's config file. The emulator has to be closed first." />
                     <Button Content="Scan" MinWidth="90" Classes="accent"
                             Command="{Binding ScanCommand}"
                             IsVisible="{Binding !IsBusy}"

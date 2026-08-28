@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -46,6 +47,8 @@ public sealed partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(CanScan))]
     [NotifyPropertyChangedFor(nameof(CanVerify))]
     [NotifyPropertyChangedFor(nameof(CanFix))]
+    [NotifyPropertyChangedFor(nameof(CanApplyEmulatorSettings))]
+    [NotifyPropertyChangedFor(nameof(HasEmulatorSettings))]
     [NotifyPropertyChangedFor(nameof(IsReadOnlySource))]
     [NotifyPropertyChangedFor(nameof(ReadOnlyReason))]
     public partial ProfileViewModel? SelectedProfile { get; set; }
@@ -54,6 +57,7 @@ public sealed partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(CanScan))]
     [NotifyPropertyChangedFor(nameof(CanVerify))]
     [NotifyPropertyChangedFor(nameof(CanFix))]
+    [NotifyPropertyChangedFor(nameof(CanApplyEmulatorSettings))]
     public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
@@ -124,6 +128,10 @@ public sealed partial class MainViewModel : ViewModelBase
     public static string ReadOnlyReason => "This install is being read over FTP, so nothing here can be changed. You can diagnose the problem and export a report, but fixes and reinstalls are disabled.";
 
     public bool CanFix => !IsBusy && HasScanned && !IsReadOnlySource && SelectedFixes.Any();
+
+    public bool HasEmulatorSettings => SelectedProfile?.Profile.Emulator?.HasConfig == true;
+
+    public bool CanApplyEmulatorSettings => !IsBusy && HasEmulatorSettings;
 
     private IEnumerable<FindingViewModel> SelectedFixes =>
         Groups.SelectMany(g => g.Findings).Where(f => f is { CanBeFixed: true, SelectedForFix: true });
@@ -694,6 +702,155 @@ public sealed partial class MainViewModel : ViewModelBase
         }
 
         await ScanAsync();
+    }
+
+
+    // ---- Emulator settings --------------------------------------------------
+
+    /// <summary>
+    /// Writes optimal settings for the emulator.
+    /// </summary>
+    /// <remarks>
+    /// Not in Apply Fixes because it's technically not a fix.
+    /// </remarks>
+    [RelayCommand]
+    private async Task ApplyEmulatorSettingsAsync()
+    {
+        if (SelectedProfile?.Profile.Emulator is not { } emulator)
+        {
+            return;
+        }
+
+        if (!await StopEmulatorAsync(emulator))
+        {
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            var plan = await EmulatorSettingsWriter.PlanAsync(emulator, CancellationToken.None);
+
+            if (plan.IsEmpty)
+            {
+                await _dialogs.ShowMessageAsync(
+                    "Nothing to change",
+                    $"Every setting is already correct in {emulator.ProductName}.");
+
+                return;
+            }
+
+            var chosen = await _dialogs.ConfirmSettingsAsync(emulator.ProductName, plan);
+
+            if (chosen is null || chosen.Count == 0)
+            {
+                return;
+            }
+
+            await EmulatorSettingsWriter.ApplyAsync(
+                emulator,
+                plan with { Changes = chosen },
+                NewProgress(),
+                CancellationToken.None);
+
+            Status = $"Wrote {chosen.Count} setting{(chosen.Count == 1 ? "" : "s")} to {emulator.ProductName}.";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        {
+            await _dialogs.ShowMessageAsync("The settings could not be written", e.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+
+        if (HasScanned)
+        {
+            await ScanAsync();
+        }
+    }
+
+    /// <summary>
+    /// Stops every instance of the emulator.
+    /// False when the user declined or something is still running.
+    /// </summary>
+    /// <remarks>
+    /// Kills *all* instances so that nothing can block or overwrite
+    /// the settings being changed.
+    /// </remarks>
+    private async Task<bool> StopEmulatorAsync(EmulatorInstallation emulator)
+    {
+        var running = EmulatorProcessGuard.Find(emulator);
+
+        if (running.Count == 0)
+        {
+            return true;
+        }
+
+        var listed = string.Join("\n", running.Select(r => $"    {r.Name} (pid {r.Pid})"));
+
+        var confirmed = await _dialogs.ConfirmAsync(
+            $"{emulator.ProductName} has to close first",
+            (running.Count == 1
+                ? $"{emulator.ProductName} is running:"
+                : $"{running.Count} {emulator.ProductName} processes are running:")
+            + $"\n\n{listed}\n\n"
+            + "It rewrites its settings when it exits, so anything written while it is open would be "
+            + "overwritten as soon as it closes.",
+            "Close it and continue",
+            destructive: false);
+
+        if (!confirmed)
+        {
+            return false;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            Status = $"Waiting for {emulator.ProductName} to close…";
+
+            var left = await EmulatorProcessGuard.CloseAsync(
+                running, TimeSpan.FromSeconds(10), CancellationToken.None);
+
+            if (left.Count == 0)
+            {
+                return true;
+            }
+
+            var forced = await _dialogs.ConfirmAsync(
+                "Force it to close?",
+                string.Join("\n", left.Select(r => $"    {r.Name} (pid {r.Pid})"))
+                + "\n\ndid not respond. This usually means the window is already gone and the process is "
+                + "stuck. Forcing it to close is usually safe, though it may lose any unsaved progress.",
+                "Force close",
+                destructive: true);
+
+            if (!forced)
+            {
+                return false;
+            }
+
+            left = await EmulatorProcessGuard.KillAsync(left, TimeSpan.FromSeconds(5), CancellationToken.None);
+
+            if (left.Count == 0)
+            {
+                return true;
+            }
+
+            await _dialogs.ShowMessageAsync(
+                "It is still running",
+                string.Join("\n", left.Select(r => $"    {r.Name} (pid {r.Pid})"))
+                + "\n\ncould not be stopped. Close it from your system's task manager and try again.");
+
+            return false;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     // ---- Fresh install ------------------------------------------------------
