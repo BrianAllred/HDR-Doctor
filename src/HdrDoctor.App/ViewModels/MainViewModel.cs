@@ -51,6 +51,7 @@ public sealed partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasEmulatorSettings))]
     [NotifyPropertyChangedFor(nameof(IsReadOnlySource))]
     [NotifyPropertyChangedFor(nameof(ReadOnlyReason))]
+    [NotifyPropertyChangedFor(nameof(CanOpenFolder))]
     public partial ProfileViewModel? SelectedProfile { get; set; }
 
     [ObservableProperty]
@@ -104,6 +105,8 @@ public sealed partial class MainViewModel : ViewModelBase
     public ObservableCollection<SkippedCheck> Skipped { get; } = [];
 
     public bool CanScan => !IsBusy && SelectedProfile?.IsAvailable == true;
+
+    public bool CanOpenFolder => SelectedProfile is { IsAvailable: true, Profile.Path: not null };
 
     public bool CanVerify =>
         !IsBusy && HasScanned && SelectedProfile?.IsAvailable == true && Environment?.FileListAvailable == true;

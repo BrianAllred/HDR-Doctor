@@ -22,7 +22,7 @@
         <Border DockPanel.Dock="Top" Padding="16,12"
                 Background="{DynamicResource ChromeBackgroundBrush}"
                 BorderBrush="{DynamicResource BrandLineBrush}" BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10">
 
                 <ComboBox Grid.Column="0"
                           ItemsSource="{Binding Profiles}"
@@ -39,15 +39,21 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
 
-                <Button Grid.Column="1" Content="Add local folder…"
+                <Button Grid.Column="1" Content="📂" Width="36"
+                        ToolTip.Tip="Open this install's SD card folder in the file manager"
+                        Command="{Binding RevealCommand}"
+                        CommandParameter="{Binding SelectedProfile.Profile.Path}"
+                        IsEnabled="{Binding CanOpenFolder}" />
+
+                <Button Grid.Column="2" Content="Add local folder…"
                         Command="{Binding AddFolderCommand}"
                         IsEnabled="{Binding !IsBusy}" />
 
-                <Button Grid.Column="2" Content="Add FTP folder…"
+                <Button Grid.Column="3" Content="Add FTP folder…"
                         Command="{Binding AddFtpCommand}"
                         IsEnabled="{Binding !IsBusy}" />
 
-                <Button Grid.Column="3" Content="⋯" Width="36" ToolTip.Tip="More actions"
+                <Button Grid.Column="4" Content="⋯" Width="36" ToolTip.Tip="More actions"
                         IsEnabled="{Binding !IsBusy}">
                     <Button.Flyout>
                         <MenuFlyout>
@@ -66,7 +72,7 @@
                     </Button.Flyout>
                 </Button>
 
-                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
+                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="8">
                     <Button Content="Verify files" MinWidth="90"
                             Command="{Binding VerifyFilesCommand}"
                             IsEnabled="{Binding CanVerify}"
