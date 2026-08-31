@@ -63,6 +63,15 @@ public static class HdrPaths
     /// <summary>The launcher's download scratch space.</summary>
     public const string DownloadsDir = "downloads";
 
+    public const string ArcropolisDir = "ultimate/arcropolis";
+
+    /// <summary>
+    /// Written by ARCropolis when two mods provide the same file, and never deleted
+    /// by it. See <c>ARCropolis/src/fs/discover.rs:198</c>, the only write, with no
+    /// matching remove.
+    /// </summary>
+    public const string ConflictsFile = $"{ArcropolisDir}/conflicts.json";
+
     /// <summary>
     /// The three folders a stock install owns. Hash verification and the reverse
     /// "unexpected files" pass are scoped to these, matching the launcher's verify.
@@ -83,6 +92,19 @@ public static class HdrPaths
         {
             "hdr", "hdr-assets", "hdr-stages", "hdr-dev", "hdr-pr", "hdr-private",
         };
+
+    /// <summary>
+    /// Protected mod folders that can't ever be deleted or modified.
+    /// Less inclusive than <see cref="HdrModFolderNames"/> on purpose. A
+    /// dev folder shadowing the release install is still a conflict.
+    /// </summary>
+    public static readonly IReadOnlySet<string> ProtectedModFolderNames =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            FolderName(HdrDir), FolderName(HdrStagesDir), FolderName(HdrAssetsDir),
+        };
+
+    private static string FolderName(string path) => path[(path.LastIndexOf('/') + 1)..];
 
     // ---- Plugins -------------------------------------------------------------
 

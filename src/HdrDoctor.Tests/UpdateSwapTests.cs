@@ -108,16 +108,10 @@ public sealed class UpdateSwapTests : IDisposable
         Convert.ToHexStringLower(SHA256.HashData(payload));
 
     /// <summary>Serves one release: the asset on any URL, and its SHA256SUMS.</summary>
-    private sealed class CannedRelease : HttpMessageHandler
+    private sealed class CannedRelease(byte[] payload, string? hash = null, string? sums = null) : HttpMessageHandler
     {
-        private readonly byte[] _payload;
-        private readonly string _sums;
-
-        public CannedRelease(byte[] payload, string? hash = null, string? sums = null)
-        {
-            _payload = payload;
-            _sums = sums ?? $"{hash}  HDR-Doctor-x86_64.AppImage\n";
-        }
+        private readonly byte[] _payload = payload;
+        private readonly string _sums = sums ?? $"{hash}  HDR-Doctor-x86_64.AppImage\n";
 
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,

@@ -9,6 +9,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using HdrDoctor.Core.Profiles;
+using HdrDoctor.Core.Remediations;
 using HdrDoctor.Core.Services;
 using HdrDoctor.Core.Sources;
 
@@ -625,6 +626,126 @@ public sealed class DialogService(Window owner)
                     HorizontalAlignment = HorizontalAlignment.Right,
                     Spacing = 8,
                     Children = { cancel, apply },
+                },
+            },
+        };
+
+        var owner = ResolveOwner();
+
+        if (owner is null)
+        {
+            return null;
+        }
+
+        await dialog.ShowDialog(owner);
+        return result;
+    }
+
+    /// <summary>
+    /// Asks which mod to keep.
+    /// </summary>
+    /// <remarks>
+    /// Only reached when the conflict is between non-HDR mods. No choice when an HDR
+    /// folder is involved, so this is skipped for that case.
+    /// </remarks>
+    public async Task<string?> PickConflictKeepAsync(string findingTitle, ModConflictRemediation remediation)
+    {
+        var list = new StackPanel { Spacing = 10 };
+        var buttons = new List<RadioButton>();
+
+        foreach (var mod in remediation.Choices)
+        {
+            var loses = remediation.With(mod).Losers;
+
+            var button = new RadioButton
+            {
+                Content = mod,
+                GroupName = "conflict-keep",
+                IsChecked = mod == remediation.Keep,
+                Tag = mod,
+            };
+
+            buttons.Add(button);
+
+            var row = new StackPanel { Spacing = 2, Children = { button } };
+
+            row.Children.Add(new TextBlock
+            {
+                Text = string.Join("\n", loses.Select(o => o.DeleteWholeFolder
+                    ? $"deletes all of {o.ModPath}"
+                    : $"deletes {o.Files.Count} file{(o.Files.Count == 1 ? "" : "s")} from {o.ModPath}")),
+                FontSize = 11,
+                Margin = new Avalonia.Thickness(28, 0, 0, 0),
+                TextWrapping = TextWrapping.Wrap,
+                Classes = { "muted" },
+            });
+
+            list.Children.Add(row);
+        }
+
+        string? result = null;
+
+        var cancel = new Button { Content = "Cancel", MinWidth = 96, IsCancel = true };
+        var choose = new Button
+        {
+            Content = "Keep this one",
+            MinWidth = 96,
+            IsDefault = true,
+            Classes = { "destructive" },
+        };
+
+        var dialog = new Window
+        {
+            Title = "Which mod should win?",
+            SizeToContent = SizeToContent.Height,
+            Width = 560,
+            MaxHeight = 700,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false,
+            ShowInTaskbar = false,
+            Icon = _owner.Icon,
+        };
+
+        choose.Click += (_, _) =>
+        {
+            result = buttons.FirstOrDefault(b => b.IsChecked == true)?.Tag as string;
+            dialog.Close();
+        };
+
+        cancel.Click += (_, _) => dialog.Close();
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(24),
+            Spacing = 20,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = findingTitle,
+                    FontSize = 18,
+                    FontWeight = FontWeight.SemiBold,
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                new TextBlock
+                {
+                    Text = (remediation.Choices.Count == 2
+                               ? "Neither of these is an HDR mod"
+                               : "None of these are HDR mods")
+                           + ", so the choice is yours. The mod you keep is left "
+                           + "untouched; the conflicting files are deleted out of the others, and anything they "
+                           + "provide that the kept mod does not is left alone.",
+                    TextWrapping = TextWrapping.Wrap,
+                    FontSize = 12,
+                    Classes = { "muted" },
+                },
+                new ScrollViewer { MaxHeight = 420, Content = list },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { cancel, choose },
                 },
             },
         };

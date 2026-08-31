@@ -28,6 +28,7 @@ public sealed class ScanService(ReleaseManifestClient manifests, IAppPaths paths
         new StageAltsCheck(),
         new ModFolderCheck(),
         new ThirdPartyModCheck(),
+        new ArcropolisConflictsCheck(),
         new EmulatorConfigCheck(),
         new LauncherConfigCheck(paths),
         new SkylineLogCheck(paths),

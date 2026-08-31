@@ -18,6 +18,7 @@ This is an **unofficial** app. It is **not** a replacement for the HDR launcher.
 | Skyline plugins | Required plugins present; conflicting ones (`libparam_config.nro`, a stale `libhdr.nro`, stale `liblocal_latency_slider.nro`) |
 | HID module | A leftover HID-HDR system-module patch under title `0100000000000013`, which breaks booting on more recent Switch firmware |
 | HDR mod folders | The folders HDR owns are present and complete enough to boot; the versions they declare; other installed mods classified as code / gameplay / cosmetic |
+| Mod conflicts | `ultimate/arcropolis/conflicts.json` — mods that provide the same files as HDR (or as each other), and entries left behind by mods that are no longer installed |
 | File verification | Every file MD5-verified against the release's published `content_hashes.json`; missing, altered and unexpected files. A separate step you start yourself — see below |
 | Stage alts | `ultimate/stage-alts/Hashes_all` — missing or malformed, which panics the game during boot |
 | Emulator config | RNG seed, VSync, graphics backend, async shaders and presentation, forced clocks, memory layout (yuzu family); PPTC (Ryujinx). These can also be written for you — see below |
@@ -198,6 +199,8 @@ filesystem.
   and its ignore lists, ported so the two tools agree about a clean install
 - `stage-alts-2/src/search.rs` — the unwrapping read of `Hashes_all`
 - `ARCropolis/crates/config` — where ARCropolis keeps its settings
+- `ARCropolis/src/fs/discover.rs` — mod discovery, the conflict map it writes, and
+  which files it ignores or merges rather than treats as a conflict
 - `Atmosphere/stratosphere/creport/source/creport_crash_report.cpp` — the crash
   report's file name and layout
 - Lots and lots (and lots) of hours in the HDR Discord server's #troubleshooting channel

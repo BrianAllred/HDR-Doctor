@@ -17,6 +17,7 @@ using HdrDoctor.Core.Checks;
 using HdrDoctor.Core;
 using HdrDoctor.Core.Model;
 using HdrDoctor.Core.Profiles;
+using HdrDoctor.Core.Remediations;
 using HdrDoctor.Core.Services;
 using HdrDoctor.Core.Sources;
 
@@ -660,6 +661,31 @@ public sealed partial class MainViewModel : ViewModelBase
         }
 
         var selected = SelectedFixes.Select(f => f.Finding).ToList();
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        // If there's a conflict between two non-HDR mods, ask which one to keep.
+        for (var i = 0; i < selected.Count; i++)
+        {
+            if (selected[i].Remediation is not ModConflictRemediation { Choices.Count: > 0 } conflict)
+            {
+                continue;
+            }
+
+            var keep = await _dialogs.PickConflictKeepAsync(selected[i].Title, conflict);
+
+            if (keep is null)
+            {
+                // Backing out of one conflict drops that fix.
+                selected.RemoveAt(i--);
+                continue;
+            }
+
+            selected[i] = selected[i] with { Remediation = conflict.With(keep) };
+        }
+
         if (selected.Count == 0)
         {
             return;
