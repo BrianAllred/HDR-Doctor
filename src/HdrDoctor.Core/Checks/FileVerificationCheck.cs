@@ -36,7 +36,7 @@ public sealed class FileVerificationCheck : ICheck
         "ui_bgm_db.prc",
         "ui_series_db.prc",
         "msg_bgm.msbt",
-        "msg_title.mbst",
+        "msg_title.msbt",
     ];
 
     /// <summary>
