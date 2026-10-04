@@ -49,32 +49,12 @@ public static class FtpMountDetector
     /// </summary>
     internal static bool IsFtpMountLinux(string targetPath, IEnumerable<string> mountLines)
     {
-        int longestMatch = -1;
-        bool isFtp = false;
+        if (MountTable.Find(targetPath, mountLines) is not { } mount) return false;
 
-        foreach (string line in mountLines)
-        {
-            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 3) continue;
-
-            // Handle octal escaped spaces in mount paths
-            string mountPoint = parts[1].Replace("\\040", " ");
-            string fsType = parts[2];
-            string device = parts[0];
-
-            // Check if this mount point is a parent of our target path
-            if (IsUnder(targetPath, mountPoint) && mountPoint.Length > longestMatch)
-            {
-                longestMatch = mountPoint.Length;
-
-                // Check FUSE identifiers (e.g., "fuse.curlftpfs", "curlftpfs", or "gvfsd-ftp")
-                isFtp = fsType.Contains("ftp", StringComparison.OrdinalIgnoreCase) ||
-                        device.Contains("ftp", StringComparison.OrdinalIgnoreCase) ||
-                        IsSchemeInPathFtp(targetPath, mountPoint, device);
-            }
-        }
-
-        return isFtp;
+        // Check FUSE identifiers (e.g., "fuse.curlftpfs", "curlftpfs", or "gvfsd-ftp")
+        return mount.FsType.Contains("ftp", StringComparison.OrdinalIgnoreCase) ||
+               mount.Device.Contains("ftp", StringComparison.OrdinalIgnoreCase) ||
+               IsSchemeInPathFtp(targetPath, mount.MountPoint, mount.Device);
     }
 
     /// <summary>
@@ -116,20 +96,6 @@ public static class FtpMountDetector
         return slash < 0 ? rest : rest[..slash];
     }
 
-    /// <summary>
-    /// Whether a path sits inside a mount point.
-    /// </summary>
-    /// <remarks>
-    /// A plain StartsWith puts /mnt/switchcard under a mount at /mnt/switch, which
-    /// then wins the longest-match and answers for a filesystem the path is not on.
-    /// The boundary has to be a separator or the whole string.
-    /// </remarks>
-    private static bool IsUnder(string targetPath, string mountPoint) =>
-        targetPath.Equals(mountPoint, StringComparison.Ordinal) ||
-        targetPath.StartsWith(
-            mountPoint.EndsWith('/') ? mountPoint : mountPoint + "/",
-            StringComparison.Ordinal);
-
     private static bool IsFtpMountMac(string targetPath)
     {
         try
@@ -165,7 +131,7 @@ public static class FtpMountDetector
                 string mountPoint = line.Substring(onIndex + 4, metaIndex - (onIndex + 4)).Trim();
                 string metaData = line.Substring(metaIndex); // (ftpfs, nodev, ...)
 
-                if (IsUnder(targetPath, mountPoint) && mountPoint.Length > longestMatch)
+                if (MountTable.IsUnder(targetPath, mountPoint) && mountPoint.Length > longestMatch)
                 {
                     longestMatch = mountPoint.Length;
                     isFtp = metaData.Contains("ftp", StringComparison.OrdinalIgnoreCase) ||

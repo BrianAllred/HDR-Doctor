@@ -1,4 +1,5 @@
 using HdrDoctor.Core.Model;
+using HdrDoctor.Core.Services;
 
 namespace HdrDoctor.Core.Checks;
 
@@ -94,13 +95,20 @@ public sealed class SdCardFilesystemCheck(string? localRoot, Func<string, string
     /// What the folder's volume is formatted as, or null when the host cannot say.
     /// </summary>
     /// <remarks>
-    /// <see cref="DriveInfo"/> resolves a path to its containing mount on Unix and to
-    /// its drive root on Windows, so no mount table has to be read here.
+    /// Linux reads the mount table directly: <see cref="DriveInfo"/> mismatches any
+    /// mount point with a space in it, which is how a card labelled "SWITCH SD" came
+    /// back as tmpfs (see <see cref="MountTable"/>). Elsewhere DriveInfo resolves a
+    /// path to its containing volume correctly.
     /// </remarks>
     private static string? DescribeFilesystem(string path)
     {
         try
         {
+            if (OperatingSystem.IsLinux())
+            {
+                return MountTable.Find(Path.GetFullPath(path))?.FsType;
+            }
+
             return new DriveInfo(path).DriveFormat;
         }
         catch (Exception)
