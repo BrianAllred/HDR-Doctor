@@ -1165,4 +1165,14 @@ public sealed partial class MainViewModel : ViewModelBase
     /// <summary>Hides the banner for this run. The next launch asks again.</summary>
     [RelayCommand]
     private void DismissUpdate() => AvailableUpdate = null;
+
+    // ---- Quit ---------------------------------------------------------------
+    public Task<bool> ConfirmQuitAsync() =>
+        _dialogs.ConfirmAsync(
+            "Quit while HDR Doctor is working?",
+            "HDR Doctor is still in the middle of something.\n\n"
+            + "If it was changing your install, like reinstalling HDR, applying fixes, or installing an update, "
+            + "some files may already be changed and others not.",
+            "Quit anyway",
+            destructive: true);
 }
