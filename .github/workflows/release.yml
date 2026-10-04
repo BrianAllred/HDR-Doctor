@@ -78,14 +78,17 @@ jobs:
           }
 
           publish src/HdrDoctor.App app
-          publish tools/HdrDoctor.Cli cli
 
           mkdir -p dist
           suffix=""
           [[ "$RID" == win-* ]] && suffix=".exe"
 
           mv "app/HdrDoctor.App$suffix" "dist/hdr-doctor-$RID$suffix"
-          mv "cli/HdrDoctor.Cli$suffix" "dist/hdr-doctor-cli-$RID$suffix"
+
+          if [[ "$RID" == linux-* ]]; then
+            publish tools/HdrDoctor.Cli cli
+            mv cli/HdrDoctor.Cli "dist/hdr-doctor-cli-$RID"
+          fi
 
       - name: Ad-hoc sign (macOS)
         if: startsWith(matrix.rid, 'osx')
@@ -182,6 +185,7 @@ jobs:
         working-directory: staging
         run: |
           set -euo pipefail
+          rm hdr-doctor-cli-*
           sha256sum * > SHA256SUMS
           cat SHA256SUMS
 

@@ -52,9 +52,18 @@ public sealed class UpdateService(HttpClient http)
     /// </summary>
     /// <returns><see langword="null"/> when this build is current, or when the release
     /// carries nothing this platform can run.</returns>
+    /// <exception cref="InvalidOperationException">This build is never published on its own.</exception>
     public async Task<AppUpdate?> CheckAsync(CancellationToken ct)
     {
         RemoveStaleBackup();
+
+        var wanted = AssetNameFor(
+                         Assembly.GetEntryAssembly()?.GetName().Name,
+                         CurrentRid(),
+                         Environment.GetEnvironmentVariable("APPIMAGE") is { Length: > 0 })
+                     ?? throw new InvalidOperationException(
+                         "The console version is only released inside the Linux AppImage, so this copy cannot update itself. "
+                         + "Download the AppImage and run it with --cli instead.");
 
         using var response = await http
             .GetAsync($"https://api.github.com/repos/{Repository}/releases/latest", ct)
@@ -82,11 +91,6 @@ public sealed class UpdateService(HttpClient http)
         {
             return null;
         }
-
-        var wanted = AssetNameFor(
-            Assembly.GetEntryAssembly()?.GetName().Name,
-            CurrentRid(),
-            Environment.GetEnvironmentVariable("APPIMAGE") is { Length: > 0 });
 
         string? assetUrl = null;
         string? checksumUrl = null;
@@ -290,22 +294,28 @@ public sealed class UpdateService(HttpClient http)
     /// than as a failure. UpdateServiceTests pins them.
     /// </remarks>
     /// <param name="entryAssemblyName">
-    /// <c>HdrDoctor.Cli</c> selects the CLI asset; anything else selects the app.
+    /// <c>HdrDoctor.Cli</c> has no asset of its own: it is released only inside the AppImage.
     /// </param>
     /// <param name="appImage">
     /// True when running from an AppImage, which bundles both and so has one asset of its own.
     /// </param>
-    public static string AssetNameFor(string? entryAssemblyName, string rid, bool appImage)
+    /// <returns><see langword="null"/> for a CLI outside the AppImage. Falling through to
+    /// the app's asset instead would install the app over it.</returns>
+    public static string? AssetNameFor(string? entryAssemblyName, string rid, bool appImage)
     {
         if (appImage)
         {
             return "HDR-Doctor-x86_64.AppImage";
         }
 
-        var kind = entryAssemblyName == "HdrDoctor.Cli" ? "hdr-doctor-cli" : "hdr-doctor";
+        if (entryAssemblyName == "HdrDoctor.Cli")
+        {
+            return null;
+        }
+
         var extension = rid.StartsWith("win", StringComparison.Ordinal) ? ".exe" : "";
 
-        return $"{kind}-{rid}{extension}";
+        return $"hdr-doctor-{rid}{extension}";
     }
 
     /// <summary>The runtime identifier this process was published for.</summary>

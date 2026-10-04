@@ -29,8 +29,6 @@ public class UpdateServiceTests
     [InlineData("HdrDoctor.App", "linux-x64", "hdr-doctor-linux-x64")]
     [InlineData("HdrDoctor.App", "win-x64", "hdr-doctor-win-x64.exe")]
     [InlineData("HdrDoctor.App", "osx-arm64", "hdr-doctor-osx-arm64")]
-    [InlineData("HdrDoctor.Cli", "linux-x64", "hdr-doctor-cli-linux-x64")]
-    [InlineData("HdrDoctor.Cli", "win-x64", "hdr-doctor-cli-win-x64.exe")]
     public void Each_build_asks_for_its_own_asset(string assembly, string rid, string expected) =>
         Assert.Equal(expected, UpdateService.AssetNameFor(assembly, rid, appImage: false));
 
@@ -41,15 +39,16 @@ public class UpdateServiceTests
             UpdateService.AssetNameFor("HdrDoctor.App", "linux-x64", appImage: true));
 
     [Fact]
-    public void The_app_asset_is_not_the_cli_asset()
-    {
-        // Prefix matching would let "hdr-doctor-" swallow "hdr-doctor-cli-", quietly
-        // installing the CLI over the app.
-        var app = UpdateService.AssetNameFor("HdrDoctor.App", "linux-x64", appImage: false);
-        var cli = UpdateService.AssetNameFor("HdrDoctor.Cli", "linux-x64", appImage: false);
+    public void The_cli_updates_through_the_AppImage_that_carries_it() =>
+        Assert.Equal(
+            "HDR-Doctor-x86_64.AppImage",
+            UpdateService.AssetNameFor("HdrDoctor.Cli", "linux-x64", appImage: true));
 
-        Assert.NotEqual(app, cli);
-    }
+    [Theory]
+    [InlineData("linux-x64")]
+    [InlineData("win-x64")]
+    public void A_standalone_cli_has_no_asset_rather_than_the_apps(string rid) =>
+        Assert.Null(UpdateService.AssetNameFor("HdrDoctor.Cli", rid, appImage: false));
 
     [Fact]
     public void Checksums_are_read_from_sha256sum_output()

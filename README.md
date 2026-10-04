@@ -48,7 +48,7 @@ An **Emulator settings** button appears in the toolbar and can those settings
 for you when the selected profile knows which emulator it belongs to and can access
 its configuration file.
 
-`hdr-doctor-cli --emulator-settings` does the same thing without the prompts.
+The console version's `--emulator-settings` does the same thing without the prompts.
 
 Notes about how it works:
 
@@ -80,7 +80,6 @@ Every tagged release publishes a self-contained build for each platform on the
 | `hdr-doctor-win-x64.exe` | Windows |
 | `hdr-doctor-osx-arm64` / `hdr-doctor-osx-x64` | macOS, Apple Silicon and Intel |
 | `hdr-doctor-linux-x64` | Linux, if you would rather not use the AppImage |
-| `hdr-doctor-cli-*` | The console version on its own |
 | `SHA256SUMS` | Checksums for all of the above |
 
 The AppImage runs the app when you launch it, and the console version behind a flag:
@@ -111,7 +110,7 @@ Click **Install** to install the update. The console version does the same thing
 on request:
 
 ```sh
-hdr-doctor-cli --update
+./HDR-Doctor-x86_64.AppImage --cli --update
 ```
 
 The download is checked against the release's published SHA-256 before it replaces
@@ -129,17 +128,16 @@ The second form selects (or creates) a profile for that folder and scans immedia
 which is handy when you are talking somebody through it remotely. The third adds the
 file verification step.
 
-There is also a console version that prints the same report to stdout:
+Substitute the name of whichever build you downloaded — `hdr-doctor-linux-x64`,
+`hdr-doctor-win-x64.exe` and so on.
+
+The AppImage also holds a console version that prints the same report to stdout:
 
 ```sh
-hdr-doctor-cli /path/to/sdmc
-hdr-doctor-cli /path/to/sdmc --verify
-hdr-doctor-cli /path/to/sdmc --emulator-settings
+./HDR-Doctor-x86_64.AppImage --cli /path/to/sdmc
+./HDR-Doctor-x86_64.AppImage --cli /path/to/sdmc --verify
+./HDR-Doctor-x86_64.AppImage --cli /path/to/sdmc --emulator-settings
 ```
-
-Substitute the name of whichever build you downloaded — `hdr-doctor-linux-x64`,
-`hdr-doctor-win-x64.exe` and so on. The AppImage holds both, and reaches the console
-version through `--cli` as shown above.
 
 ## Profiles
 
