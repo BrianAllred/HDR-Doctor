@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="1080" d:DesignHeight="760"
         x:Class="HdrDoctor.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Icon="/Assets/icon.ico"
+        Icon="/Assets/icon.png"
         Title="HDR Doctor"
         Width="1080" Height="760"
         MinWidth="820" MinHeight="560">

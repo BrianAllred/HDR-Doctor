@@ -203,6 +203,10 @@ filesystem.
   report's file name and layout
 - Lots and lots (and lots) of hours in the HDR Discord server's #troubleshooting channel
 
+## Credits
+
+@BobTheGUYYYYY - App icon
+
 ## Disclaimer
 
 This is an unofficial tool, not necessarily supported or endorsed by the HDR development team.
