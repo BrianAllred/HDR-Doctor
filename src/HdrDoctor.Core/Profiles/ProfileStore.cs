@@ -57,12 +57,21 @@ public sealed class ProfileStore(IAppPaths paths)
     public static IReadOnlyList<InstallProfile> SuggestProfiles(IAppPaths paths) =>
         [.. new EmulatorLocator(paths).FindInstalled().Select(InstallProfile.ForEmulator)];
 
+    /// <summary>yuzu-family emulators use <c>sdmc</c>; Ryujinx uses <c>sdcard</c>.</summary>
+    private static readonly string[] EmulatorSdFolderNames = ["sdmc", "sdcard"];
+
     /// <summary>
     /// Guesses whether a folder belongs to a Switch or an emulator
     /// </summary>
     public static InstallPlatform SuggestPlatform(string path, IAppPaths paths)
     {
         if (new EmulatorLocator(paths).IdentifyByPath(path) is not null)
+        {
+            return InstallPlatform.Emulator;
+        }
+
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
+        if (EmulatorSdFolderNames.Contains(name, StringComparer.OrdinalIgnoreCase))
         {
             return InstallPlatform.Emulator;
         }

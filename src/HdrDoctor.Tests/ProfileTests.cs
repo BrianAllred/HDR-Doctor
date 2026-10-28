@@ -1,5 +1,6 @@
 using HdrDoctor.Core.Model;
 using HdrDoctor.Core.Profiles;
+using HdrDoctor.Core.Services;
 
 namespace HdrDoctor.Tests;
 
@@ -50,5 +51,33 @@ public class ProfileTests
             { IsFtpMount = true };
 
         Assert.False(profile.SupportsFixes);
+    }
+
+    /// <summary>
+    /// A copied-over card keeps its <c>switch</c> and <c>bootloader</c> folders, so
+    /// an emulator SD folder can carry every Switch marker.
+    /// </summary>
+    [Theory]
+    [InlineData("sdmc")]
+    [InlineData("sdcard")]
+    public void A_folder_with_an_emulator_sd_name_is_an_emulator(string name)
+    {
+        using var sd = new SdFixture()
+            .WithDirectory($"{name}/switch")
+            .WithDirectory($"{name}/bootloader");
+        using var paths = new FakeAppPaths();
+
+        Assert.Equal(
+            InstallPlatform.Emulator,
+            ProfileStore.SuggestPlatform(Path.Combine(sd.Root, name) + Path.DirectorySeparatorChar, paths));
+    }
+
+    [Fact]
+    public void Any_other_folder_with_switch_markers_is_a_switch()
+    {
+        using var sd = new SdFixture().WithDirectory("switch").WithDirectory("bootloader");
+        using var paths = new FakeAppPaths();
+
+        Assert.Equal(InstallPlatform.Switch, ProfileStore.SuggestPlatform(sd.Root, paths));
     }
 }
