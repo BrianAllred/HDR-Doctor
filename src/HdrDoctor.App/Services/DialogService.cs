@@ -405,19 +405,23 @@ public sealed class DialogService(Window owner)
     }
 
     public async Task ShowMessageAsync(string title, string message) =>
-        await ShowAsync(title, message, "Close", null, destructive: false);
+        await ShowAsync(title, message, "Close", null, null, destructive: false);
 
     public async Task<bool> ConfirmAsync(string title, string message, string confirmLabel, bool destructive) =>
-        await ShowAsync(title, message, "Cancel", confirmLabel, destructive);
+        await ShowAsync(title, message, "Cancel", confirmLabel, null, destructive) == true;
 
-    private async Task<bool> ShowAsync(
+    public Task<bool?> ChooseAsync(string title, string message, string confirmLabel, string alternateLabel) =>
+        ShowAsync(title, message, "Cancel", confirmLabel, alternateLabel, destructive: false);
+
+    private async Task<bool?> ShowAsync(
         string title,
         string message,
         string dismissLabel,
         string? confirmLabel,
+        string? alternateLabel,
         bool destructive)
     {
-        var result = false;
+        bool? result = null;
 
         var dismiss = new Button
         {
@@ -446,6 +450,19 @@ public sealed class DialogService(Window owner)
             ShowInTaskbar = false,
             Icon = _owner.Icon,
         };
+
+        if (alternateLabel is not null)
+        {
+            var alternate = new Button { Content = alternateLabel, MinWidth = 96 };
+
+            alternate.Click += (_, _) =>
+            {
+                result = false;
+                dialog.Close();
+            };
+
+            buttons.Children.Add(alternate);
+        }
 
         if (confirmLabel is not null)
         {
@@ -499,7 +516,7 @@ public sealed class DialogService(Window owner)
         if (owner is null)
         {
             dialog.Show();
-            return false;
+            return null;
         }
 
         await dialog.ShowDialog(owner);

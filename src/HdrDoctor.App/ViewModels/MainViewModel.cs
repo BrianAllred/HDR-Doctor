@@ -951,6 +951,33 @@ public sealed partial class MainViewModel : ViewModelBase
             return;
         }
 
+        if (_lastResult.VerifiedAt is null && CanVerify)
+        {
+            var verifyFirst = await _dialogs.ChooseAsync(
+                "Verify files first?",
+                "This report will say the installation wasn't verified, which is important when "
+                + "making sure files match the release.\n\n"
+                + "Verifying checks every file against the release. It reads the whole "
+                + "install and can take several minutes.",
+                "Verify, then export",
+                "Export without verifying");
+
+            if (verifyFirst is null)
+            {
+                return;
+            }
+
+            if (verifyFirst == true)
+            {
+                await VerifyFilesAsync();
+
+                if (_lastResult?.VerifiedAt is null)
+                {
+                    return;
+                }
+            }
+        }
+
         var suggested = $"hdr-report-{DateTime.Now:yyyy-MM-dd-HHmm}.txt";
         var path = await _dialogs.SaveFileAsync("Save report", suggested);
 
