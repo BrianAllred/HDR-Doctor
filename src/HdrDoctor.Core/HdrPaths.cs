@@ -106,6 +106,13 @@ public static class HdrPaths
 
     private static string FolderName(string path) => path[(path.LastIndexOf('/') + 1)..];
 
+    /// <summary>
+    /// The top-level folders an HDR install lives in. A picked folder with one of these
+    /// names is usually inside the install root rather than the root itself.
+    /// </summary>
+    public static readonly IReadOnlySet<string> InstallRootChildNames =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "atmosphere", "ultimate" };
+
     // ---- Plugins -------------------------------------------------------------
 
     /// <summary>

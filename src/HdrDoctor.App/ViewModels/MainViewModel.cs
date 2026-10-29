@@ -260,6 +260,20 @@ public sealed partial class MainViewModel : ViewModelBase
             return;
         }
 
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(folder));
+
+        if (HdrPaths.InstallRootChildNames.Contains(name) &&
+            !await _dialogs.ConfirmAsync(
+                "This may be the wrong folder",
+                $"\"{name}\" is a folder inside an SD card, not the card itself. You may have drilled "
+                + "down too far. The folder you want is the one that contains atmosphere and ultimate.\n\n"
+                + $"Maybe you meant {Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(folder))}?",
+                $"Add \"{name}\" anyway",
+                destructive: false))
+        {
+            return;
+        }
+
         AddFolder(folder);
     }
 
